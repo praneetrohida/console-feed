@@ -3,6 +3,8 @@ const TRANSFORMED_TYPE_KEY = '@t'
 const CIRCULAR_REF_KEY = '@r'
 const KEY_REQUIRE_ESCAPING_RE = /^#*@(t|r)$/
 
+const MAX_KEYS = 100
+
 const GLOBAL = (function getGlobal() {
   // NOTE: see http://www.ecma-international.org/ecma-262/6.0/index.html#sec-performeval step 10
   const savedEval = eval
@@ -85,7 +87,8 @@ class EncodingTransformer {
   _handleArray(arr: any): any {
     const result = [] as any
 
-    for (let i = 0; i < arr.length; i++)
+    const limit = Math.min(arr.length || MAX_KEYS)
+    for (let i = 0; i < limit; i++)
       result[i] = this._handleValue(() => arr[i], result, i)
 
     return result
@@ -94,11 +97,20 @@ class EncodingTransformer {
   _handlePlainObject(obj: any) {
     const result = Object.create(null)
 
-    for (const key in obj) {
-      if (Reflect.has(obj, key)) {
-        const resultKey = KEY_REQUIRE_ESCAPING_RE.test(key) ? `#${key}` : key
+    let counter = 0
 
-        result[resultKey] = this._handleValue(() => obj[key], result, resultKey)
+    for (const key in obj) {
+      if (counter < MAX_KEYS) {
+        if (Reflect.has(obj, key)) {
+          const resultKey = KEY_REQUIRE_ESCAPING_RE.test(key) ? `#${key}` : key
+
+          result[resultKey] = this._handleValue(
+            () => obj[key],
+            result,
+            resultKey
+          )
+          counter++
+        }
       }
     }
 
