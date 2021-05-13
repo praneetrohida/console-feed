@@ -23,18 +23,19 @@ function objectifyAttributes(element: any) {
 export default {
   type: 'HTMLElement',
   shouldTransform(type: any, obj: any) {
-    return (
-      obj &&
-      obj.children &&
-      typeof obj.innerHTML === 'string' &&
-      typeof obj.tagName === 'string'
-    )
+    if (!obj) return false
+    const hasChildren = obj.hasOwnProperty('children') && obj.children
+    const hasInnerHTML =
+      obj.hasOwnProperty('innerHTML') && typeof obj.innerHTML === 'string'
+    let hasTagName =
+      obj.hasOwnProperty('tagName') && typeof obj.tagName === 'string'
+    return obj && hasChildren && hasInnerHTML && hasTagName
   },
   toSerializable(element: HTMLElement) {
     return {
       tagName: element.tagName.toLowerCase(),
       attributes: objectifyAttributes(element),
-      innerHTML: element.innerHTML
+      innerHTML: element.innerHTML,
     } as Storage
   },
   fromSerializable(data: Storage) {
@@ -50,5 +51,5 @@ export default {
     } catch (e) {
       return data
     }
-  }
+  },
 }
