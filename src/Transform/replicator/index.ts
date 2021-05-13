@@ -154,15 +154,7 @@ class EncodingTransformer {
 
       return val
     } catch (e) {
-      try {
-        return this._handleValue(
-          () => (e instanceof Error ? e : new Error(e)),
-          parent,
-          key
-        )
-      } catch {
-        return null
-      }
+      return null
     }
   }
 
