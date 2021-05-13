@@ -71,7 +71,13 @@ class EncodingTransformer {
     this.circularCandidatesDescrs.push({ parent, key, refIdx: -1 })
   }
 
-  _applyTransform(val: any, parent: any, key: any, transform: any) {
+  _applyTransform(
+    val: any,
+    parent: any,
+    key: any,
+    transform: any,
+    onOverflow: () => void
+  ) {
     const result = Object.create(null)
     const serializableVal = transform.toSerializable(val)
 
@@ -79,22 +85,31 @@ class EncodingTransformer {
       this._createCircularCandidate(val, parent, key)
 
     result[TRANSFORMED_TYPE_KEY] = transform.type
-    result.data = this._handleValue(() => serializableVal, parent, key)
+    result.data = this._handleValue(
+      () => serializableVal,
+      parent,
+      key,
+      onOverflow
+    )
 
     return result
   }
 
-  _handleArray(arr: any): any {
+  _handleArray(arr: any, onOverflow: () => void): any {
     const result = [] as any
 
     const limit = Math.min(arr.length || MAX_KEYS)
     for (let i = 0; i < limit; i++)
-      result[i] = this._handleValue(() => arr[i], result, i)
+      result[i] = this._handleValue(() => arr[i], result, i, onOverflow)
+
+    if (arr.length > MAX_KEYS) {
+      onOverflow()
+    }
 
     return result
   }
 
-  _handlePlainObject(obj: any) {
+  _handlePlainObject(obj: any, onOverflow: () => void) {
     const result = Object.create(null)
 
     let counter = 0
@@ -107,10 +122,13 @@ class EncodingTransformer {
           result[resultKey] = this._handleValue(
             () => obj[key],
             result,
-            resultKey
+            resultKey,
+            onOverflow
           )
           counter++
         }
+      } else {
+        onOverflow()
       }
     }
 
@@ -122,12 +140,12 @@ class EncodingTransformer {
     return result
   }
 
-  _handleObject(obj: any, parent: any, key: any) {
+  _handleObject(obj: any, parent: any, key: any, onOverflow: () => void) {
     this._createCircularCandidate(obj, parent, key)
 
     return Array.isArray(obj)
-      ? this._handleArray(obj)
-      : this._handlePlainObject(obj)
+      ? this._handleArray(obj, onOverflow)
+      : this._handlePlainObject(obj, onOverflow)
   }
 
   _ensureCircularReference(obj: any) {
@@ -145,7 +163,12 @@ class EncodingTransformer {
     return null
   }
 
-  _handleValue(getVal: () => any, parent: any, key: any) {
+  _handleValue(
+    getVal: () => any,
+    parent: any,
+    key: any,
+    onOverflow: () => void
+  ) {
     try {
       const val = getVal()
       const type = typeof val
@@ -159,10 +182,10 @@ class EncodingTransformer {
 
       for (const transform of this.transforms) {
         if (transform.shouldTransform(type, val))
-          return this._applyTransform(val, parent, key, transform)
+          return this._applyTransform(val, parent, key, transform, onOverflow)
       }
 
-      if (isObject) return this._handleObject(val, parent, key)
+      if (isObject) return this._handleObject(val, parent, key, onOverflow)
 
       return val
     } catch (e) {
@@ -171,7 +194,16 @@ class EncodingTransformer {
   }
 
   transform() {
-    const references = [this._handleValue(() => this.references, null, null)]
+    let hasOverflown = false
+    const onOverflow = () => {
+      if (!hasOverflown) {
+        hasOverflown = true
+      }
+    }
+
+    const references = [
+      this._handleValue(() => this.references, null, null, onOverflow),
+    ]
 
     for (const descr of this.circularCandidatesDescrs) {
       if (descr.refIdx > 0) {
@@ -180,6 +212,13 @@ class EncodingTransformer {
           descr.refIdx
         )
       }
+    }
+
+    if (hasOverflown) {
+      setTimeout(() => {
+        // @ts-ignore
+        window.warnSizzyConsoleOverflow?.()
+      }, 0)
     }
 
     return references
