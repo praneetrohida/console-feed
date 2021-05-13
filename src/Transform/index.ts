@@ -12,7 +12,7 @@ const replicator = new Replicator()
 replicator.addTransforms(transforms)
 
 export function Encode<T>(data: any): T {
-  return JSON.parse(replicator.encode(data))
+  return replicator.encode(data)
 }
 
 export function Decode(data: any): Message {
