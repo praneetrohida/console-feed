@@ -1,6 +1,6 @@
 {
-  "name": "console-feed",
-  "version": "3.2.2",
+  "name": "console-feed-optimized",
+  "version": "3.2.3",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "description": "A React component that displays console logs from the current page, an iframe or transported across a server",
@@ -82,14 +82,14 @@
     "ui",
     "view"
   ],
-  "homepage": "https://github.com/samdenty99/console-feed",
+  "homepage": "https://github.com/praneetrohida/console-feed",
   "repository": {
     "type": "git",
-    "url": "https://github.com/samdenty99/console-feed.git"
+    "url": "https://github.com/praneetrohida/console-feed.git"
   },
   "bugs": {
-    "url": "https://github.com/samdenty99/console-feed/issues"
+    "url": "https://github.com/praneetrohida/console-feed/issues"
   },
-  "author": "Sam Denty <samddenty@gmail.com> (http://github.com/samdenty99)",
+  "author": "Praneet Rohida <hey@praneet.dev> (http://github.com/praneetrohida)",
   "license": "MIT"
 }
